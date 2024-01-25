@@ -1,0 +1,58 @@
+---
+title: "SSRP Examples"
+author: "Angel Mendiola Ross"
+date: "2024-01-25"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = '/Users/angelmr/Dropbox/')
+```
+
+### Set up
+
+```{r}
+### Clear global environment
+rm(list=ls())
+
+library(pacman)
+pacman::p_unload(all)
+
+pacman::p_load(
+  tidyverse, #dplyr, readr, etc.
+  foreign, #load data types including stata .dta files 
+  magrittr, #%<>% operator
+  tidyverse,
+  tigris, #mapping
+  sf, #mapping
+  readxl #to read excel files
+)
+```
+
+Loading different types of data formats.
+
+```{r}
+# loading a csv
+prison_to_muni <- read_csv("state_fed_prisons_to_municipalities.csv")
+
+# loading an R data file
+load("cities.RData")
+
+# joining municipalities to cities database
+# Add a leading "0" to the geoid column with only 6 characters
+prison_to_muni$GEOID <- ifelse(nchar(prison_to_muni$GEOID) == 6, sprintf("0%s", prison_to_muni$GEOID), prison_to_muni$GEOID)
+# renaming
+prison_to_muni %<>% rename(place_geo = GEOID)
+
+# reducing to 2019 data only
+cities19 <- cities %>% subset(year==2019)
+cities19 <- left_join(x=cities19,
+                      y = prison_to_muni,
+                      by = "place_geo")
+
+cities19 %>%
+  subset(pcr_places_1980_75==1) %>%
+  arrange(desc(H_race)) %>%
+  select(placenm,Join_Count,H_race,H_rent,M_race,total_pop_place,pnhw_place)
+```
